@@ -7,6 +7,7 @@ import { Clock, Eye, Gavel, Heart, DollarSign, Users, TrendingUp, ShoppingCart }
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { SeedDatabaseButton } from '@/components/SeedDatabaseButton';
 
 interface AuctionData {
   id: string;
@@ -448,8 +449,9 @@ const Auctions = () => {
 
       {auctions.length === 0 && !loading && (
         <div className="text-center py-12">
-          <h3 className="text-xl font-semibold text-muted-foreground">No active auctions</h3>
-          <p className="text-muted-foreground mt-2">Check back soon for new listings!</p>
+          <h3 className="text-2xl font-semibold text-muted-foreground mb-4">No active auctions</h3>
+          <p className="text-lg text-muted-foreground mb-6">Create some test auction data to get started!</p>
+          <SeedDatabaseButton />
         </div>
       )}
     </div>
