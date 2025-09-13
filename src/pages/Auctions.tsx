@@ -16,6 +16,7 @@ interface AuctionData {
   current_price: number;
   bid_count: number;
   status: 'upcoming' | 'active' | 'ended' | 'cancelled';
+  mode: 'auction_only' | 'buy_now_only' | 'both';
   item: {
     id: string;
     title: string;
@@ -178,25 +179,28 @@ const Auctions = () => {
     
     if (diff <= 0) return { text: "Ended", color: "text-red-500", urgent: false };
     
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const totalMinutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const days = Math.floor(hours / 24);
     
     let text = '';
     let color = 'text-green-600';
     let urgent = false;
     
-    if (days > 1) {
-      text = `${days}d ${hours}h`;
+    // Senior-friendly urgency psychology: green>yellow>red
+    if (totalMinutes > 120) { // >2 hours
+      if (days > 0) {
+        text = `${days}d ${hours % 24}h`;
+      } else {
+        text = `${hours}h ${minutes}m`;
+      }
       color = 'text-green-600';
-    } else if (days === 1) {
-      text = `${days}d ${hours}h`;
-      color = 'text-yellow-600';
-    } else if (hours > 1) {
+    } else if (totalMinutes > 30) { // 30min-2hrs
       text = `${hours}h ${minutes}m`;
       color = 'text-yellow-600';
-    } else {
-      text = `${hours}h ${minutes}m`;
+    } else { // <30min
+      text = `${minutes}m`;
       color = 'text-red-500';
       urgent = true;
     }
@@ -245,23 +249,29 @@ const Auctions = () => {
           const minBid = auction.current_price + 1;
           const retailPrice = auction.item.retail_price;
           const savingsPercent = retailPrice ? Math.round(((retailPrice - auction.current_price) / retailPrice) * 100) : 0;
+          const savingsAmount = retailPrice ? retailPrice - auction.current_price : 0;
+          const showBidding = auction.mode === 'auction_only' || auction.mode === 'both';
+          const showBuyNow = (auction.mode === 'buy_now_only' || auction.mode === 'both') && auction.item.buy_now_price;
 
           return (
             <Card key={auction.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-2">
-              {/* Price Anchoring Header */}
+              {/* Price Anchoring Header - Psychology for rural seniors */}
               {retailPrice && (
-                <div className="bg-red-50 dark:bg-red-950 p-3 border-b">
+                <div className="bg-red-50 dark:bg-red-950 p-4 border-b">
                   <div className="flex justify-between items-center">
                     <div>
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-lg text-muted-foreground line-through">
                         Retail: ${retailPrice.toLocaleString()}
                       </span>
-                      <div className="text-green-600 font-bold text-lg">
-                        Save {savingsPercent}% (${(retailPrice - auction.current_price).toLocaleString()})
+                      <div className="text-green-600 font-bold text-2xl">
+                        You Save ${savingsAmount.toLocaleString()}!
+                      </div>
+                      <div className="text-green-600 font-semibold text-lg">
+                        That's {savingsPercent}% off retail
                       </div>
                     </div>
-                    <Badge variant="destructive" className="text-white">
-                      SAVE BIG
+                    <Badge variant="destructive" className="text-white text-lg px-4 py-2">
+                      HUGE SAVINGS
                     </Badge>
                   </div>
                 </div>
@@ -305,109 +315,119 @@ const Auctions = () => {
                     {auction.item.category?.name || 'Uncategorized'}
                   </Badge>
                   
-                  {/* Social Proof */}
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  {/* Social Proof - Enhanced for seniors */}
+                  <div className="flex items-center gap-4 text-lg text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
-                      {auction.analytics?.view_count || 0}
+                      <Eye className="w-5 h-5" />
+                      <span className="font-semibold">{auction.analytics?.view_count || 0} views</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {auction.analytics?.watcher_count || 0} watching
+                      <Users className="w-5 h-5" />
+                      <span className="font-semibold text-orange-600">{auction.analytics?.watcher_count || 0} watching</span>
                     </div>
                   </div>
                 </div>
                 
-                <CardTitle className="text-xl leading-tight font-bold">
+                <CardTitle className="text-2xl leading-tight font-bold">
                   {auction.item.title}
                 </CardTitle>
                 
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="text-lg text-muted-foreground line-clamp-2">
                   {auction.item.description}
                 </p>
 
-                {/* Trust Signals */}
-                <div className="flex gap-2 mt-2">
-                  <Badge variant="secondary" className="text-xs">
-                    Condition: {auction.item.condition}
+                {/* Trust Signals - Enhanced for seniors */}
+                <div className="flex gap-3 mt-3">
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    Condition: {auction.item.condition.replace('_', ' ')}
                   </Badge>
-                  <Badge variant="secondary" className="text-xs">
-                    ✓ Verified
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    ✓ Authentic
+                  </Badge>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    ✓ Local Source
                   </Badge>
                 </div>
               </CardHeader>
               
               <CardContent className="space-y-4">
                 {/* Current Bid Display */}
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Current Bid</div>
-                  <div className="text-3xl font-bold text-primary">
+                <div className="text-center p-6 bg-primary/10 rounded-lg">
+                  <div className="text-lg text-muted-foreground mb-2">
+                    {auction.mode === 'buy_now_only' ? 'Price' : 'Current Bid'}
+                  </div>
+                  <div className="text-4xl font-bold text-primary">
                     ${auction.current_price.toLocaleString()}
                   </div>
-                  <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Gavel className="w-4 h-4" />
-                      {auction.bid_count} bids
+                  <div className="flex items-center justify-center gap-6 mt-3 text-lg text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Gavel className="w-5 h-5" />
+                      <span className="font-semibold">{auction.bid_count} bids</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <TrendingUp className="w-4 h-4" />
-                      Hot item
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5" />
+                      <span className="font-semibold text-red-600">Hot item!</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Quick Bid Buttons */}
-                <div className="space-y-3">
-                  <div className="text-sm font-medium text-center">Quick Bid</div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {quickBids.map((amount) => (
-                      <Button
-                        key={amount}
-                        variant="outline"
-                        size="sm"
-                        className="text-lg font-bold py-3"
-                        onClick={() => placeBid(auction.id, auction.current_price + amount)}
-                      >
-                        +${amount}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                {/* Bidding Interface - Only show for auction modes */}
+                {showBidding && (
+                  <>
+                    {/* Quick Bid Buttons */}
+                    <div className="space-y-4">
+                      <div className="text-xl font-medium text-center">Quick Bid</div>
+                      <div className="grid grid-cols-3 gap-3">
+                        {quickBids.map((amount) => (
+                          <Button
+                            key={amount}
+                            variant="outline"
+                            size="lg"
+                            className="text-xl font-bold py-4 min-h-[44px]"
+                            onClick={() => placeBid(auction.id, auction.current_price + amount)}
+                          >
+                            +${amount}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Custom Bid Input */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder={`Min: $${minBid}`}
-                      value={currentBid}
-                      onChange={(e) => setBidAmounts(prev => ({ ...prev, [auction.id]: e.target.value }))}
-                      className="text-lg"
-                    />
-                    <Button
-                      onClick={() => {
-                        const amount = parseFloat(currentBid);
-                        if (amount >= minBid) {
-                          placeBid(auction.id, amount);
-                        }
-                      }}
-                      disabled={!currentBid || parseFloat(currentBid) < minBid}
-                      className="px-6 text-lg font-bold"
-                    >
-                      <Gavel className="w-4 h-4 mr-2" />
-                      Bid
-                    </Button>
-                  </div>
-                </div>
+                    {/* Custom Bid Input */}
+                    <div className="space-y-3">
+                      <div className="flex gap-3">
+                        <Input
+                          type="number"
+                          placeholder={`Min: $${minBid}`}
+                          value={currentBid}
+                          onChange={(e) => setBidAmounts(prev => ({ ...prev, [auction.id]: e.target.value }))}
+                          className="text-xl py-3 min-h-[44px]"
+                        />
+                        <Button
+                          onClick={() => {
+                            const amount = parseFloat(currentBid);
+                            if (amount >= minBid) {
+                              placeBid(auction.id, amount);
+                            }
+                          }}
+                          disabled={!currentBid || parseFloat(currentBid) < minBid}
+                          className="px-8 text-xl font-bold min-h-[44px]"
+                        >
+                          <Gavel className="w-5 h-5 mr-2" />
+                          Bid
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
 
-                {/* Buy Now Option */}
-                {auction.item.buy_now_price && (
+                {/* Buy Now Option - Only show for buy-now modes */}
+                {showBuyNow && (
                   <Button
                     onClick={() => buyNow(auction.id, auction.item.buy_now_price!)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-lg py-3"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold text-2xl py-6 min-h-[56px]"
                     size="lg"
                   >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    <ShoppingCart className="w-6 h-6 mr-3" />
                     Buy Now - ${auction.item.buy_now_price.toLocaleString()}
                   </Button>
                 )}

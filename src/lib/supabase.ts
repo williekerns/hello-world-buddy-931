@@ -30,6 +30,7 @@ export interface Item {
   starting_price: number
   reserve_price: number | null
   buy_now_price: number | null
+  retail_price: number | null
   shipping_cost: number
   weight: number | null
   dimensions: string | null
@@ -45,6 +46,16 @@ export interface Auction {
   current_price: number
   bid_count: number
   status: 'upcoming' | 'active' | 'ended' | 'cancelled'
+  mode: 'auction_only' | 'buy_now_only' | 'both'
+  created_at: string
+  updated_at: string
+}
+
+export interface ItemAnalytics {
+  id: string
+  item_id: string
+  view_count: number
+  watcher_count: number
   created_at: string
   updated_at: string
 }
