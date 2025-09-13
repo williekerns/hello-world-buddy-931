@@ -242,6 +242,12 @@ const Auctions = () => {
         <p className="text-muted-foreground text-lg">Authentic items at unbeatable prices</p>
       </header>
 
+      <div className="mb-6 text-center">
+        <Button onClick={() => alert('Hello World!')} size="lg" className="text-xl px-8 py-4">
+          Hello World
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {auctions.map((auction) => {
           const timeRemaining = formatTimeRemaining(auction.end_time);
