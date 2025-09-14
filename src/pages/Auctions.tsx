@@ -30,11 +30,11 @@ interface AuctionData {
     category: {
       name: string;
     };
+    analytics: {
+      view_count: number;
+      watcher_count: number;
+    } | null;
   };
-  analytics: {
-    view_count: number;
-    watcher_count: number;
-  } | null;
 }
 
 const Auctions = () => {
@@ -74,9 +74,9 @@ const Auctions = () => {
           *,
           item:items(
             *,
-            category:categories(name)
-          ),
-          analytics:item_analytics(view_count, watcher_count)
+            category:categories(name),
+            analytics:item_analytics(view_count, watcher_count)
+          )
         `)
         .eq('status', 'active')
         .order('end_time', { ascending: true });
@@ -326,11 +326,11 @@ const Auctions = () => {
                   <div className="flex items-center gap-4 text-lg text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Eye className="w-5 h-5" />
-                      <span className="font-semibold">{auction.analytics?.view_count || 0} views</span>
+                      <span className="font-semibold">{auction.item.analytics?.view_count || 0} views</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Users className="w-5 h-5" />
-                      <span className="font-semibold text-orange-600">{auction.analytics?.watcher_count || 0} watching</span>
+                      <span className="font-semibold text-orange-600">{auction.item.analytics?.watcher_count || 0} watching</span>
                     </div>
                   </div>
                 </div>
